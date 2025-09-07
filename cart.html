@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <titl>Mini Amazon</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes fadeSlide {
+            from { transform: translateX(-10px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        @keyframes scaleIn {
+            from { transform: scale(0.95); }
+            to { transform: scale(1); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+        }
+        .animate-slideIn {
+            animation: slideIn 0.3s ease-out forwards;
+        }
+        .animate-fadeSlide {
+            animation: fadeSlide 0.5s ease-in forwards;
+        }
+        .animate-pulse {
+            animation: pulse 0.2s ease-in-out;
+        }
+        .animate-scaleIn {
+            animation: scaleIn 0.2s ease-in-out;
+        }
+        .animate-shake {
+            animation: shake 0.3s ease-in-out;
+        }
+        .cart-item:hover {
+            transform: scale(1.02);
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+        .input-focus:focus {
+            transform: scale(1.02);
+            box-shadow: 0 0 8px rgba(59, 130, 246, 0.7);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-glow:hover {
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.7);
+            transition: box-shadow 0.2s;
+        }
+    </style>
+</head>
+<body class="min-h-screen font-sans">
+    <div class="container mx-auto p-4 max-w-4xl">
+        <h1 class="text-4xl font-bold text-center mb-8 text-blue-400">Mini cart</h1>
+        
+        <!-- Product Input Form -->
+        <div class="bg-gray-800 p-6 rounded-lg shadow-lg mb-6 border border-gray-700">
+            <h2 class="text-2xl font-semibold mb-4 text-blue-300">Add Product</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <input id="productName" type="text" placeholder="Product Name" class="input-focus bg-gray-900 border-gray-600 text-white p-2 rounded">
+                <input id="productPrice" type="number" placeholder="Price" class="input-focus bg-gray-900 border-gray-600 text-white p-2 rounded">
+                <input id="productQuantity" type="number" placeholder="Quantity" class="input-focus bg-gray-900 border-gray-600 text-white p-2 rounded">
+                <button onclick="addProduct()" class="bg-blue-600 text-white p-2 rounded btn-glow hover:bg-blue-700">Add to Cart</button>
+            </div>
+        </div>
+
+        <!-- Discount and Payment Options -->
+        <div class="bg-gray-800 p-6 rounded-lg shadow-lg mb-6 border border-gray-700">
+            <h2 class="text-2xl font-semibold mb-4 text-blue-300">Discount & Payment</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <select id="discountType" class="bg-gray-900 border-gray-600 text-white p-2 rounded input-focus">
+                    <option value="none">No Discount</option>
+                    <option value="festive">Festive (10%)</option>
+                    <option value="bulk">Bulk (20% if qty > 5)</option>
+                </select>
+                <input id="couponCode" type="text" placeholder="Coupon Code (e.g., SAVE10)" class="input-focus bg-gray-900 border-gray-600 text-white p-2 rounded">
+                <input id="referrals" type="number" placeholder="Referrals" class="input-focus bg-gray-900 border-gray-600 text-white p-2 rounded">
+            </div>
+            <div class="mt-4">
+                <label class="font-semibold text-blue-300">Payment Method:</label>
+                <select id="paymentType" class="bg-gray-900 border-gray-600 text-white p-2 rounded input-focus ml-2">
+                    <option value="upi">UPI</option>
+                    <option value="credit">Credit Card</option>
+                    <option value="cash">Cash</option>
+                    <option value="later">Pay Later</option>
+                    <option value="combine">Combine with Friends</option>
+                </select>
+                <div id="combineFriends" class="hidden mt-2">
+                    <input id="numFriends" type="number" placeholder="Number of Friends" class="input-focus bg-gray-900 border-gray-600 text-white p-2 rounded">
+                </div>
+            </div>
+            <button onclick="checkout()" class="mt-4 bg-green-600 text-white p-2 rounded btn-glow hover:bg-green-700">Checkout</button>
+        </div>
+
+        <!-- Cart Display -->
+        <div id="cart" class="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">
+            <h2 class="text-2xl font-semibold mb-4 text-blue-300">Your Cart</h2>
+            <div id="cartItems"></div>
+            <div id="cartSummary" class="mt-4"></div>
+        </div>
+    </div>
+
+    <script>
+        let cart = [];
+
+        function addProduct() {
+            const name = document.getElementById('productName').value.trim();
+            const price = parseFloat(document.getElementById('productPrice').value);
+            const quantity = parseInt(document.getElementById('productQuantity').value);
+
+            if (name && !isNaN(price) && !isNaN(quantity) && price > 0 && quantity > 0) {
+                cart.push({ name, price, quantity });
+                document.getElementById('productName').value = '';
+                document.getElementById('productPrice').value = '';
+                document.getElementById('productQuantity').value = '';
+                updateCart();
+                document.getElementById('cart').classList.add('animate-pulse');
+                setTimeout(() => document.getElementById('cart').classList.remove('animate-pulse'), 200);
+            } else {
+                const inputs = [document.getElementById('productName'), document.getElementById('productPrice'), document.getElementById('productQuantity')];
+                inputs.forEach(input => {
+                    if (!input.value || input.value <= 0) {
+                        input.classList.add('animate-shake', 'border-red-500');
+                        setTimeout(() => input.classList.remove('animate-shake', 'border-red-500'), 300);
+                    }
+                });
+                alert('Please enter valid product details.');
+            }
+        }
+
+        function updateCart() {
+            const cartItems = document.getElementById('cartItems');
+            cartItems.innerHTML = '';
+            cart.forEach((item, index) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'cart-item p-4 border-b border-gray-700 animate-slideIn';
+                itemDiv.innerHTML = `
+                    <p class="text-gray-200">Product: ${item.name}, Price: $${item.price.toFixed(2)}, Quantity: ${item.quantity}</p>
+                    <button onclick="removeProduct(${index})" class="text-red-400 hover:text-red-300">Remove</button>
+                `;
+                cartItems.appendChild(itemDiv);
+            });
+        }
+
+        function removeProduct(index) {
+            cart.splice(index, 1);
+            updateCart();
+            document.getElementById('cart').classList.add('animate-pulse');
+            setTimeout(() => document.getElementById('cart').classList.remove('animate-pulse'), 200);
+        }
+
+        function calculateTotal() {
+            let total = 0;
+            let totalQuantity = 0;
+            cart.forEach(item => {
+                total += item.price * item.quantity;
+                totalQuantity += item.quantity;
+            });
+            return { total, totalQuantity };
+        }
+
+        function applyDiscount(total, totalQuantity, discountType, couponCode) {
+            let finalAmount = total;
+            if (discountType === 'festive') {
+                finalAmount *= 0.9;
+            } else if (discountType === 'bulk' && totalQuantity > 5) {
+                finalAmount *= 0.8;
+            }
+            if (couponCode === 'SAVE10') {
+                finalAmount *= 0.9;
+            }
+            return finalAmount;
+        }
+
+        function calculateCredits(paymentType, referrals) {
+            let credits = referrals * 1;
+            if (paymentType === 'upi') {
+                credits += 10;
+            }
+            return credits;
+        }
+
+        function checkout() {
+            const discountType = document.getElementById('discountType').value;
+            const couponCode = document.getElementById('couponCode').value.trim();
+            const referrals = parseInt(document.getElementById('referrals').value) || 0;
+            const paymentType = document.getElementById('paymentType').value;
+            const numFriends = parseInt(document.getElementById('numFriends').value) || 0;
+
+            const { total, totalQuantity } = calculateTotal();
+            const finalAmount = applyDiscount(total, totalQuantity, discountType, couponCode);
+            const credits = calculateCredits(paymentType, referrals);
+
+            let paymentMessage = '';
+            if (paymentType === 'upi') {
+                paymentMessage = `Paying $${finalAmount.toFixed(2)} via UPI`;
+            } else if (paymentType === 'credit') {
+                paymentMessage = `Paying $${finalAmount.toFixed(2)} via Credit Card`;
+            } else if (paymentType === 'cash') {
+                paymentMessage = `Paying $${finalAmount.toFixed(2)} via Cash`;
+            } else if (paymentType === 'later') {
+                paymentMessage = `Amount to Pay Later: $${finalAmount.toFixed(2)}`;
+            } else if (paymentType === 'combine') {
+                if (numFriends <= 0) {
+                    document.getElementById('numFriends').classList.add('animate-shake', 'border-red-500');
+                    setTimeout(() => document.getElementById('numFriends').classList.remove('animate-shake', 'border-red-500'), 300);
+                    alert('Please enter a valid number of friends.');
+                    return;
+                }
+                const share = finalAmount / (numFriends + 1);
+                paymentMessage = `Total Amount: $${finalAmount.toFixed(2)}, Number of Friends: ${numFriends}, Each pays: $${share.toFixed(2)}`;
+            }
+
+            const cartSummary = document.getElementById('cartSummary');
+            cartSummary.innerHTML = `
+                <div class="animate-fadeSlide text-gray-200">
+                    <p class="font-semibold text-blue-300">Total Amount Payable: $${finalAmount.toFixed(2)}</p>
+                    <p>${paymentMessage}</p>
+                    <p>Total Credits Earned: ${credits}</p>
+                </div>
+            `;
+            cartSummary.classList.add('animate-pulse');
+            setTimeout(() => cartSummary.classList.remove('animate-pulse'), 200);
+        }
+
+        // Show/hide number of friends input for combine payment
+        document.getElementById('paymentType').addEventListener('change', function() {
+            const combineFriends = document.getElementById('combineFriends');
+            if (this.value === 'combine') {
+                combineFriends.classList.remove('hidden');
+                combineFriends.classList.add('animate-slideIn');
+            } else {
+                combineFriends.classList.add('hidden');
+            }
+        });
+
+        // Add scaleIn animation on input focus
+        document.querySelectorAll('.input-focus').forEach(input => {
+            input.addEventListener('focus', () => input.classList.add('animate-scaleIn'));
+            input.addEventListener('blur', () => input.classList.remove('animate-scaleIn'));
+        });
+    </script>
+</body>
+</html>
